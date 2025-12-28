@@ -45,6 +45,14 @@ class CIFAR10DataModule(L.LightningDataModule):
             train=True,
             download=False,
         )
+
+        # クラス名を自動取得（CIFAR-100等に拡張しやすく）
+        class_names = list(getattr(train_data, "classes", []))
+        if class_names:
+            self.cfg.data.class_names = class_names
+            self.cfg.data.num_classes = len(class_names)
+        else:
+            class_names = list(self.cfg.data.class_names)
         
         # NumPy配列に変換
         train_images = np.array(train_data.data)  # (50000, 32, 32, 3)
@@ -77,11 +85,11 @@ class CIFAR10DataModule(L.LightningDataModule):
             "train_size": len(X_train),
             "val_size": len(X_val),
             "test_size": len(X_test),
-            "num_classes": self.data_cfg.num_classes,
+            "num_classes": len(class_names),
             "img_size": self.data_cfg.img_size,
-            "train_class_dist": self._get_class_distribution(y_train),
-            "val_class_dist": self._get_class_distribution(y_val),
-            "test_class_dist": self._get_class_distribution(y_test),
+            "train_class_dist": self._get_class_distribution(y_train, class_names),
+            "val_class_dist": self._get_class_distribution(y_val, class_names),
+            "test_class_dist": self._get_class_distribution(y_test, class_names),
         }
         
         print(f"\n{'='*60}")
@@ -101,11 +109,13 @@ class CIFAR10DataModule(L.LightningDataModule):
                 images=X_train,
                 labels=y_train,
                 transform=self.train_transform,
+                class_names=class_names,
             )
             self.val_dataset = CIFAR10Dataset(
                 images=X_val,
                 labels=y_val,
                 transform=self.val_transform,
+                class_names=class_names,
             )
         
         if stage == "test" or stage is None:
@@ -113,11 +123,13 @@ class CIFAR10DataModule(L.LightningDataModule):
                 images=X_test,
                 labels=y_test,
                 transform=self.test_transform,
+                class_names=class_names,
             )
     
-    def _get_class_distribution(self, labels: np.ndarray) -> Dict[str, int]:
+    def _get_class_distribution(
+        self, labels: np.ndarray, class_names: list[str]
+    ) -> Dict[str, int]:
         """クラス分布を取得"""
-        class_names = CIFAR10Dataset.get_class_names()
         unique, counts = np.unique(labels, return_counts=True)
         return {class_names[int(k)]: int(v) for k, v in zip(unique, counts)}
     
@@ -158,7 +170,7 @@ class CIFAR10DataModule(L.LightningDataModule):
     
     @property
     def class_names(self) -> list:
-        return CIFAR10Dataset.get_class_names()
+        return list(self.cfg.data.class_names)
     
     def get_data_stats(self) -> Dict:
         return self.data_stats

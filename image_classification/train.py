@@ -162,6 +162,7 @@ def main(cfg: DictConfig) -> None:
     datamodule = CIFAR10DataModule(cfg)
     datamodule.prepare_data()
     datamodule.setup()
+    cfg.model.num_classes = datamodule.num_classes
 
     # Model
     print("🏗️ Building model...")

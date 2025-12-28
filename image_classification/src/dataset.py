@@ -8,18 +8,13 @@ import albumentations as A
 class CIFAR10Dataset(Dataset):
     """CIFAR10用のカスタムデータセット"""
     
-    # CIFAR-10のクラス名
-    CLASSES = [
-        "airplane", "automobile", "bird", "cat", "deer",
-        "dog", "frog", "horse", "ship", "truck"
-    ]
-    
     def __init__(
         self,
         images: np.ndarray,
         labels: np.ndarray,
         transform: Optional[A.Compose] = None,
         return_index: bool = False,
+        class_names: Optional[List[str]] = None,
     ):
         """
         Args:
@@ -32,6 +27,9 @@ class CIFAR10Dataset(Dataset):
         self.labels = labels
         self.transform = transform
         self.return_index = return_index
+        if not class_names:
+            raise ValueError("class_names must be provided.")
+        self.class_names = list(class_names)
         
         # (N, C, H, W) -> (N, H, W, C)に変換
         if len(self.images.shape) == 4 and self.images.shape[1] == 3:
@@ -60,13 +58,11 @@ class CIFAR10Dataset(Dataset):
         
         return image, label
     
-    @classmethod
-    def get_class_names(cls) -> List[str]:
-        return cls.CLASSES.copy()
-    
-    @classmethod
-    def get_num_classes(cls) -> int:
-        return len(cls.CLASSES)
+    def get_class_names(self) -> List[str]:
+        return self.class_names.copy()
+
+    def get_num_classes(self) -> int:
+        return len(self.class_names)
     
     def get_labels(self) -> np.ndarray:
         """全ラベルを取得"""
@@ -76,6 +72,6 @@ class CIFAR10Dataset(Dataset):
         """クラス分布を取得"""
         unique, counts = np.unique(self.labels, return_counts=True)
         return {
-            self.CLASSES[int(k)]: int(v) 
+            self.class_names[int(k)]: int(v)
             for k, v in zip(unique, counts)
         }
