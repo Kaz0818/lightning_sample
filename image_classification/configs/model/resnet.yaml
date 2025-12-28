@@ -1,0 +1,8 @@
+name: "resnet18"
+pretrained: true
+num_classes: 10
+drop_rate: 0.2
+drop_path_rate: 0.1
+# モデル固有設定
+# freeze_backbone: false
+# freeze_epochs: 0  # 最初のN epoch分バックボーンを凍結

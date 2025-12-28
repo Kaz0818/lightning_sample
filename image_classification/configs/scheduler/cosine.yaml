@@ -1,0 +1,5 @@
+name: "cosine"
+T_max: null  # epochs数に自動設定
+eta_min: 1.0e-6
+warmup_epochs: 0
+warmup_start_lr: 1.0e-7
