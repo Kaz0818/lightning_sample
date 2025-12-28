@@ -1,6 +1,7 @@
 """ユーティリティ関数"""
 import random
 import os
+import sys
 import numpy as np
 import torch
 import albumentations as A
@@ -80,6 +81,47 @@ def get_device_info() -> Dict[str, Any]:
         ]
     
     return info
+
+
+def detect_runtime() -> str:
+    """実行環境を判定（local/colab/kaggle）"""
+    if os.environ.get("KAGGLE_KERNEL_RUN_TYPE") or os.path.exists("/kaggle/working"):
+        return "kaggle"
+    if os.environ.get("COLAB_GPU") or "google.colab" in sys.modules:
+        return "colab"
+    return "local"
+
+
+def resolve_project_root() -> Path:
+    """プロジェクトルートを推定"""
+    return Path(__file__).resolve().parents[2]
+
+
+def resolve_data_dir(cfg: DictConfig, project_root: Path) -> Path:
+    """データディレクトリを解決（相対パスはプロジェクトルート基準）"""
+    env_dir = os.environ.get("IC_DATA_DIR")
+    if env_dir:
+        return Path(env_dir).expanduser().resolve()
+    data_dir = Path(cfg.paths.data_dir)
+    if data_dir.is_absolute():
+        return data_dir
+    return (project_root / data_dir).resolve()
+
+
+def resolve_wandb_mode(cfg: DictConfig, runtime: str) -> tuple[bool, str]:
+    """W&Bの有効/モードを決定"""
+    if os.environ.get("WANDB_DISABLED", "").lower() in ("1", "true", "yes"):
+        return False, "disabled"
+    env_mode = os.environ.get("WANDB_MODE")
+    if env_mode:
+        return True, env_mode
+    if cfg.wandb.offline:
+        return True, "offline"
+    if runtime == "kaggle" and not os.environ.get("WANDB_API_KEY"):
+        return True, "offline"
+    if os.environ.get("WANDB_API_KEY"):
+        return True, "online"
+    return True, "offline"
 
 
 def denormalize(

@@ -69,6 +69,35 @@ pip install -r requirements.txt
 
 # W&Bログイン
 wandb login
+```
+
+## 🧪 Colab / Kaggle での実行
+
+どちらの環境でもそのまま動くように、以下に対応しています。
+- Hydraの作業ディレクトリ変更による相対パス崩れを回避
+- W&BはAPIキーが無い場合に自動でoffline
+- データ保存先を環境変数で上書き可能
+
+### Colab
+```bash
+!git clone <your-repo-url>
+%cd <repo-name>
+!pip install -r image_classification/requirements.txt
+!python image_classification/train.py
+```
+
+### Kaggle Notebook
+```bash
+!git clone <your-repo-url> /kaggle/working/<repo-name>
+%cd /kaggle/working/<repo-name>
+!pip install -r image_classification/requirements.txt
+!python image_classification/train.py
+```
+
+### 便利な環境変数
+- `IC_DATA_DIR` : データ保存先を指定
+- `WANDB_DISABLED=true` : W&Bを無効化
+- `WANDB_MODE=offline` : 強制的にオフライン
 
 💻 使い方
 基本的な学習
@@ -127,3 +156,4 @@ python train.py scheduler=plateau
 
 # 7. エポック数を増やして実行
 python train.py training.epochs=10
+```

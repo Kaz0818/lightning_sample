@@ -32,7 +32,13 @@ from src import (
     SampleVisualizationCallback,
 )
 from src.callbacks import LearningCurveCallback
-from src.utils import count_parameters
+from src.utils import (
+    count_parameters,
+    detect_runtime,
+    resolve_project_root,
+    resolve_data_dir,
+    resolve_wandb_mode,
+)
 
 # PyTorch 2.6以降のweights_only問題に対応
 # チェックポイントにOmegaConfの設定が保存されているため、safe globalsに追加
@@ -119,6 +125,15 @@ def main(cfg: DictConfig) -> None:
     set_seed(cfg.experiment.seed)
     L.seed_everything(cfg.experiment.seed, workers=True)
 
+    # 実行環境の判定
+    runtime = detect_runtime()
+
+    # パス解決（Hydraのchdir影響を回避）
+    project_root = resolve_project_root()
+    data_dir = resolve_data_dir(cfg, project_root)
+    data_dir.mkdir(parents=True, exist_ok=True)
+    cfg.paths.data_dir = str(data_dir)
+
     # 出力ディレクトリ設定（Hydraの出力ディレクトリを使用）
     output_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
     cfg.paths.output_dir = str(output_dir)
@@ -126,20 +141,21 @@ def main(cfg: DictConfig) -> None:
     print(f"📁 Output directory: {output_dir}\n")
 
     # W&B初期化
-    if cfg.wandb.offline:
-        wandb_mode = "offline"
+    wandb_enabled, wandb_mode = resolve_wandb_mode(cfg, runtime)
+    if wandb_enabled and wandb_mode != "disabled":
+        wandb_logger = WandbLogger(
+            project=cfg.wandb.project,
+            entity=cfg.wandb.entity,
+            name=cfg.experiment.name,
+            tags=list(cfg.wandb.tags),
+            config=OmegaConf.to_container(cfg, resolve=True),
+            save_dir=str(output_dir),
+            mode=wandb_mode,
+        )
+        print(f"🧪 W&B mode: {wandb_mode}")
     else:
-        wandb_mode = "online"
-
-    wandb_logger = WandbLogger(
-        project=cfg.wandb.project,
-        entity=cfg.wandb.entity,
-        name=cfg.experiment.name,
-        tags=list(cfg.wandb.tags),
-        config=OmegaConf.to_container(cfg, resolve=True),
-        save_dir=str(output_dir),
-        mode=wandb_mode,
-    )
+        wandb_logger = None
+        print("🧪 W&B disabled")
 
     # DataModule
     print("📦 Setting up DataModule...")

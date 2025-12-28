@@ -1,0 +1,26 @@
+name: "cifar10"
+num_classes: 10
+img_size: 224
+channels: 3
+batch_size: 64
+num_workers: 4
+pin_memory: true
+persistent_workers: true
+
+# データ分割
+train_ratio: 0.8
+val_ratio: 0.1
+test_ratio: 0.1
+
+# クラス名
+class_names:
+  - "airplane"
+  - "automobile"
+  - "bird"
+  - "cat"
+  - "deer"
+  - "dog"
+  - "frog"
+  - "horse"
+  - "ship"
+  - "truck"

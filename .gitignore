@@ -9,6 +9,4 @@ wheels/
 # Virtual environments
 .venv
 outputs/
-/image_classification/outputs
-# Data
-data/
+dataset/
